@@ -1,0 +1,329 @@
+BulletinFlow - Implementation Plan
+Phase 0 (Project Setup) and Phase 1 (MVP Core) technical implementation plan.
+
+User Review Required
+IMPORTANT
+
+Tech Stack Confirmation
+
+Next.js 15 (App Router) + TypeScript + Tailwind CSS ✓
+Supabase for database, auth, and storage ✓
+Docker services: ONLYOFFICE + Python PDF2DOCX ✓
+shadcn/ui for components ✓
+Google Gemini 1.5 Pro for AI (Phase 3+) ✓
+WARNING
+
+Phase 1 Scope Phase 1 will be manual field selection only - no AI detection yet. This allows us to build and validate the core PDF processing pipeline before adding AI complexity.
+
+Testing Strategy
+IMPORTANT
+
+Test-Driven Development Approach Every feature will include comprehensive unit tests before moving to the next phase. This ensures code quality, prevents regressions, and makes refactoring safe.
+
+Testing Stack
+Unit Tests: Vitest (faster than Jest, native ESM support)
+Component Tests: React Testing Library + Vitest
+E2E Tests: Playwright (Phase 1+)
+API Tests: Vitest with MSW (Mock Service Worker)
+Coverage Target: >80% for critical paths
+Test Organization
+__tests__/
+  lib/
+    pdf/
+      upload.test.ts
+      text-extraction.test.ts
+      converter.test.ts
+    templates/
+      fingerprint.test.ts
+      matcher.test.ts
+    supabase/
+      client.test.ts
+  components/
+    bulletin/
+      upload-zone.test.tsx
+      pdf-canvas.test.tsx
+      field-editor.test.tsx
+  app/
+    api/
+      bulletins/
+        generate.test.ts
+What to Test
+Phase 0:
+
+✅ Supabase client initialization
+✅ Environment variable validation
+✅ Database connection (integration test)
+Phase 1:
+
+✅ PDF upload to Supabase Storage
+✅ PDF text extraction with coordinates
+✅ Layout fingerprint generation
+✅ Template matching algorithm
+✅ Field value extraction
+✅ DOCX injection logic
+✅ PDF generation pipeline (end-to-end)
+✅ React components (upload, editor, etc.)
+✅ API routes (auth, bulletins, generate)
+Test Conventions:
+
+Every utility function in lib/ gets a unit test
+Every API route gets request/response tests
+Every UI component gets basic render + interaction tests
+Critical user flows get E2E tests (upload → edit → download)
+CI/CD Integration
+# .github/workflows/test.yml
+name: Tests
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: npm install
+      - run: npm test
+      - run: npm run test:e2e
+Proposed Changes
+Phase 0: Next.js Project Initialization
+[NEW] Next.js 15 Application
+Initialize the project with:
+
+npx create-next-app@latest bulletin-flow --typescript --tailwind --app --no-src-dir
+Configuration:
+
+TypeScript enabled
+App Router (not Pages Router)
+Tailwind CSS with custom configuration
+ESLint + Prettier
+No src/ directory (use /app directly)
+Key files:
+
+next.config.ts - Next.js configuration
+tailwind.config.ts - Tailwind + shadcn/ui theme
+tsconfig.json - TypeScript configuration
+vitest.config.ts - Vitest configuration
+playwright.config.ts - E2E test configuration (Phase 1+)
+Phase 0: Supabase Integration
+[NEW] Supabase Client Setup
+Files to create:
+
+lib/supabase/client.ts - Browser client
+lib/supabase/server.ts - Server-side client with cookies
+lib/supabase/middleware.ts - Auth middleware
+Environment variables:
+
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+[NEW] Database Schema
+Tables:
+
+churches
+
+id (uuid, primary key)
+name (text)
+created_at (timestamp)
+owner_id (uuid, references auth.users)
+bulletins
+
+id (uuid, primary key)
+church_id (uuid, references churches)
+original_pdf_url (text) - Supabase Storage URL
+template_id (uuid, nullable, references templates)
+week_of (date)
+created_at (timestamp)
+templates
+
+id (uuid, primary key)
+church_id (uuid, references churches)
+name (text)
+layout_fingerprint (text) - Hash for auto-matching
+field_definitions (jsonb) - Array of field configs
+created_at (timestamp)
+bulletin_versions
+
+id (uuid, primary key)
+bulletin_id (uuid, references bulletins)
+field_values (jsonb) - Current values for all fields
+edited_pdf_url (text, nullable)
+version (integer)
+created_at (timestamp)
+Storage Buckets:
+
+bulletin-pdfs - Original uploads
+bulletin-outputs - Generated PDFs
+bulletin-temp - DOCX intermediates
+Phase 0: Docker Services
+[NEW] 
+docker-compose.yml
+Two services:
+
+ONLYOFFICE Document Server
+
+onlyoffice-documentserver:
+  image: onlyoffice/documentserver:latest
+  ports: 8080:80
+  environment:
+    JWT_ENABLED: false
+Python PDF2DOCX Service
+
+pdf2docx-service:
+  build: ./services/pdf2docx
+  ports: 8001:8000
+  environment:
+    PYTHONUNBUFFERED: 1
+[NEW] 
+services/pdf2docx/
+Python FastAPI service with single endpoint:
+
+POST /convert - Accepts PDF bytes, returns DOCX bytes
+Uses pdf2docx library
+Phase 0: Component Library Setup
+[NEW] shadcn/ui Components
+Install core components:
+
+button
+card
+form
+input
+label
+select
+dialog
+toast
+tabs
+dropdown-menu
+Files:
+
+components/ui/* - Auto-generated by shadcn CLI
+lib/utils.ts - cn() helper
+components.json - shadcn config
+Phase 1: Authentication & Church Management
+[NEW] Auth Pages
+app/(auth)/login/page.tsx - Login with Supabase Auth
+app/(auth)/signup/page.tsx - Signup + create church
+middleware.ts - Protect routes
+[NEW] Dashboard
+app/dashboard/page.tsx - Church overview
+app/dashboard/layout.tsx - Navigation shell
+components/navigation/sidebar.tsx
+components/navigation/header.tsx
+Flow:
+
+User signs up → Email confirmation
+Create church (one church per user for MVP)
+Redirect to /dashboard
+Phase 1: PDF Upload & Template Definition
+[NEW] Bulletin Upload
+app/dashboard/bulletins/new/page.tsx - Upload interface
+components/bulletin/upload-zone.tsx - Drag & drop with react-dropzone
+lib/pdf/upload.ts - Upload to Supabase Storage
+[NEW] Template Definition Mode
+app/dashboard/bulletins/[id]/define-template/page.tsx
+components/bulletin/pdf-canvas.tsx - PDF.js viewer
+components/bulletin/field-selector.tsx - Click to select text
+lib/pdf/text-extraction.ts - Extract text layer with coordinates
+User Experience:
+
+Upload PDF → Shows in canvas
+Click "Define Template" button
+Click on text → Highlight → Name field → Save
+Repeat for all editable fields
+Save template → Stores in templates table
+Field Definition JSON Schema:
+
+type FieldDefinition = {
+  id: string;
+  label: string;
+  type: 'text' | 'multiline';
+  boundingBox: { page: number; x: number; y: number; width: number; height: number };
+  extractedText: string; // Sample text from this location
+}
+Phase 1: Template Auto-Matching & Editing
+[NEW] Template Matching
+lib/templates/fingerprint.ts - Generate layout fingerprint
+Hash of text positions on first page
+Page count + dimensions
+lib/templates/matcher.ts - Find best matching template
+[NEW] Form Editor
+app/dashboard/bulletins/[id]/edit/page.tsx
+components/bulletin/field-editor.tsx - Simple form with all fields
+lib/pdf/value-extraction.ts - Extract current values using field definitions
+Flow:
+
+Upload new PDF
+Auto-match to existing template (if exists)
+Extract current values from PDF
+Show form with all fields pre-filled
+User edits → Save to bulletin_versions
+Phase 1: PDF Generation Pipeline
+[NEW] PDF → DOCX → Edited PDF Pipeline
+lib/pdf/converter.ts - Call Python service
+lib/docx/injector.ts - Inject field values into DOCX
+lib/pdf/generator.ts - Convert DOCX back to PDF
+app/api/bulletins/[id]/generate/route.ts - API endpoint
+Pipeline:
+
+1. Original PDF (Supabase Storage)
+   ↓
+2. POST /convert → Python service → DOCX
+   ↓
+3. Inject field values at bookmarked locations (python-docx or mammoth)
+   ↓
+4. Convert DOCX → PDF (LibreOffice headless or ONLYOFFICE API)
+   ↓
+5. Upload to bulletin-outputs bucket
+   ↓
+6. Return download URL
+IMPORTANT
+
+Critical Technical Decision For Phase 1, we'll use a simplified approach:
+
+Convert PDF → DOCX via Python service
+Use python-docx to replace text at specific coordinates/bookmarks
+Convert back to PDF via LibreOffice headless (soffice --convert-to pdf)
+This avoids complex DOCX editing in Node.js. ONLYOFFICE integration comes in Phase 2.
+
+Verification Plan
+Phase 0 Verification
+# 1. Next.js app runs
+npm run dev → localhost:3000
+# 2. Docker services healthy
+docker-compose up -d
+curl http://localhost:8080 → ONLYOFFICE welcome
+curl http://localhost:8001/health → Python service OK
+# 3. Supabase connected
+Visit /dashboard → Should redirect to login → Sign up works
+# 4. Tests pass
+npm test → All unit tests pass
+npm run test:coverage → >80% coverage
+Phase 1 Verification
+End-to-End Test:
+
+Sign up → Create church "Test Church"
+Upload sample bulletin PDF
+Define template:
+Click on "Sermon Title" → Name it → Save
+Click on "Hymn 1" → Name it → Save
+Click on "Announcements" → Name it → Save
+Save template
+Upload new bulletin from next week
+Template auto-matches
+Form shows extracted values
+Edit "Sermon Title" → "A New Message"
+Click "Generate PDF"
+Download perfect PDF with updated sermon title
+Success Criteria:
+
+Downloaded PDF has new sermon title in exact same position/font
+All other text unchanged
+Total time from upload to download: < 2 minutes
+All unit tests pass (npm test)
+E2E test passes (full upload → edit → download flow)
+Code coverage >80% on critical paths (PDF processing, template matching)
+Next Steps After Phase 1
+Once Phase 1 is validated, we'll proceed to:
+
+Phase 2: Embed ONLYOFFICE for true WYSIWYG editing
+Phase 3: Add Gemini AI for smart field detection
+Phase 4: Advanced template matching with visual fingerprints
+Phase 5: Killer features (copy from last week, PlanningCenter API)
+Phase 6: Polish, pricing, and ship 🚀

@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  # ONLYOFFICE Document Server
+  onlyoffice:
+    image: onlyoffice/documentserver:latest
+    container_name: bulletinflow-onlyoffice
+    ports:
+      - "8080:80"
+    environment:
+      - JWT_ENABLED=false
+    volumes:
+      - onlyoffice_data:/var/www/onlyoffice/Data
+      - onlyoffice_logs:/var/log/onlyoffice
+    restart: unless-stopped
+    networks:
+      - bulletinflow-network
+
+  # Python PDF2DOCX Service
+  pdf2docx:
+    build:
+      context: ./services/pdf2docx
+      dockerfile: Dockerfile
+    container_name: bulletinflow-pdf2docx
+    ports:
+      - "8001:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    networks:
+      - bulletinflow-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  onlyoffice_data:
+  onlyoffice_logs:
+
+networks:
+  bulletinflow-network:
+    driver: bridge
