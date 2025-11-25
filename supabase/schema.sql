@@ -12,23 +12,23 @@ CREATE TABLE IF NOT EXISTS churches (
   owner_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL
 );
 
--- Bulletins table
-CREATE TABLE IF NOT EXISTS bulletins (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  church_id UUID REFERENCES churches(id) ON DELETE CASCADE NOT NULL,
-  original_pdf_url TEXT NOT NULL,
-  template_id UUID REFERENCES templates(id) ON DELETE SET NULL,
-  week_of DATE NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Templates table
+-- Templates table (created before bulletins to avoid circular dependency)
 CREATE TABLE IF NOT EXISTS templates (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   church_id UUID REFERENCES churches(id) ON DELETE CASCADE NOT NULL,
   name TEXT NOT NULL,
   layout_fingerprint TEXT NOT NULL,
   field_definitions JSONB NOT NULL DEFAULT '[]'::jsonb,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Bulletins table (references templates above)
+CREATE TABLE IF NOT EXISTS bulletins (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  church_id UUID REFERENCES churches(id) ON DELETE CASCADE NOT NULL,
+  original_pdf_url TEXT NOT NULL,
+  template_id UUID REFERENCES templates(id) ON DELETE SET NULL,
+  week_of DATE NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
