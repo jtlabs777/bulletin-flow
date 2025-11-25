@@ -1,0 +1,95 @@
+# BulletinFlow - Implementation Tasks
+
+## Phase 0: Project Setup ✅ COMPLETE
+
+All Phase 0 tasks completed successfully.
+
+---
+
+## Phase 1: MVP Core (Manual Field Selection)
+
+### Authentication & Church Management
+- [ ] Install additional auth dependencies (if needed)
+- [ ] Create login page UI
+- [ ] Create signup page UI
+- [ ] Implement Supabase email/password auth
+- [ ] Create dashboard layout with navigation
+- [ ] Implement church creation flow
+- [ ] Add auth-protected route tests
+
+### PDF Upload & Storage
+- [ ] Install PDF.js and file upload dependencies
+- [ ] Create PDF upload utility functions
+- [ ] Write tests for PDF upload to Supabase Storage
+- [ ] Create drag-and-drop upload component
+- [ ] Implement upload progress tracking
+- [ ] Add file validation (PDF only, size limits)
+
+### PDF Text Extraction
+- [ ] Create PDF.js text extraction utility
+- [ ] Write tests for text extraction with coordinates
+- [ ] Implement text layer parsing
+- [ ] Extract bounding box information
+- [ ] Handle multi-page PDFs
+
+### Template Definition Interface
+- [ ] Create PDF canvas viewer component
+- [ ] Implement text selection on click
+- [ ] Create field naming dialog
+- [ ] Build field list management UI
+- [ ] Add field type selection (text/multiline)
+- [ ] Implement template save functionality
+- [ ] Write tests for template creation
+
+### Layout Fingerprinting
+- [ ] Create layout fingerprint algorithm
+- [ ] Write tests for fingerprint generation
+- [ ] Implement hash generation from text positions
+- [ ] Extract page metadata (count, dimensions)
+- [ ] Store fingerprint with template
+
+### Template Auto-Matching
+- [ ] Create template matcher utility
+- [ ] Write tests for template matching algorithm
+- [ ] Implement similarity scoring
+- [ ] Find best matching template for uploaded PDF
+- [ ] Handle no-match scenarios
+
+### Field Value Extraction
+- [ ] Create value extraction utility
+- [ ] Write tests for coordinate-based extraction
+- [ ] Extract current text from PDF at field locations
+- [ ] Pre-fill form with extracted values
+- [ ] Handle extraction errors gracefully
+
+### Form Editor
+- [ ] Create bulletin editor page
+- [ ] Build dynamic form from template fields
+- [ ] Implement field editing with React Hook Form
+- [ ] Add validation rules
+- [ ] Implement save to bulletin_versions
+- [ ] Show version history
+
+### PDF Generation Pipeline
+- [ ] Create PDF conversion API route
+- [ ] Write tests for conversion pipeline
+- [ ] Implement PDF → DOCX conversion (Python service)
+- [ ] Create field injection logic for DOCX
+- [ ] Implement DOCX → PDF conversion
+- [ ] Upload to Supabase Storage
+- [ ] Return download URL
+
+### E2E Integration
+- [ ] Write end-to-end test for complete flow
+- [ ] Test: signup → create church
+- [ ] Test: upload PDF → define template
+- [ ] Test: upload new PDF → auto-match
+- [ ] Test: edit fields → generate PDF
+- [ ] Test: download final PDF
+
+### Verification
+- [ ] All unit tests pass
+- [ ] E2E test passes
+- [ ] Test coverage >80%
+- [ ] Manual verification of complete flow
+- [ ] Performance check (upload → download < 2 min)
