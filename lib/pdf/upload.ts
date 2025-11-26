@@ -75,7 +75,12 @@ export async function getUserChurch() {
         .eq('owner_id', user.id)
         .single()
 
-    if (error) throw error
+    if (error) {
+        if (error.code === 'PGRST116') {
+            throw new Error('No church found for your account. Please contact support or create a church from your profile.')
+        }
+        throw error
+    }
 
     return church
 }

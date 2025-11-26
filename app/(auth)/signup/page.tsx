@@ -43,14 +43,30 @@ export default function SignupPage() {
         try {
             const supabase = createClient()
 
+            console.log('Attempting signup...')
+
             // Create user account
             const { data: authData, error: authError } = await supabase.auth.signUp({
                 email,
                 password,
+                options: {
+                    emailRedirectTo: `${window.location.origin}/dashboard`,
+                }
             })
+
+            console.log('Auth response:', { authData, authError })
 
             if (authError) throw authError
             if (!authData.user) throw new Error('Failed to create account')
+
+            // Check if email confirmation is required
+            if (authData.session === null) {
+                setError('Please check your email to confirm your account before logging in.')
+                setLoading(false)
+                return
+            }
+
+            console.log('Creating church record...')
 
             // Create church record
             const { error: churchError } = await supabase
@@ -60,12 +76,17 @@ export default function SignupPage() {
                     owner_id: authData.user.id,
                 })
 
+            console.log('Church creation result:', churchError)
+
             if (churchError) throw churchError
+
+            console.log('Redirecting to dashboard...')
 
             // Redirect to dashboard
             router.push('/dashboard')
             router.refresh()
         } catch (err) {
+            console.error('Signup error:', err)
             setError(err instanceof Error ? err.message : 'Failed to sign up')
         } finally {
             setLoading(false)

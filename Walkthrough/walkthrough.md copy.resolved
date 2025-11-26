@@ -1,0 +1,313 @@
+# Phase 1: MVP Core - Progress Walkthrough
+
+## Overview
+
+Phase 1 implementation is **in progress**. Core authentication and PDF upload features are complete and functional.
+
+## ✅ What's Implemented
+
+### 1. Authentication System
+
+**Login Page** - [app/(auth)/login/page.tsx](file:///c:/Users/jtlab/.gemini/antigravity/scratch/bulletin-flow/app/(auth)/login/page.tsx)
+- Email/password authentication via Supabase Auth
+- Form validation and error handling
+- Automatic redirect to dashboard on success
+- Link to signup page
+
+**Signup Page** - [app/(auth)/signup/page.tsx](file:///c:/Users/jtlab/.gemini/antigravity/scratch/bulletin-flow/app/(auth)/signup/page.tsx)
+- User registration with email/password
+- Automatic church creation on signup
+- Password confirmation validation
+- Minimum 6 character password requirement
+
+### 2. Dashboard & Navigation
+
+**Dashboard Layout** - [app/dashboard/layout.tsx](file:///c:/Users/jtlab/.gemini/antigravity/scratch/bulletin-flow/app/dashboard/layout.tsx)
+- Auth-protected route (redirects to login if not authenticated)
+- Sidebar navigation
+- Header with user dropdown
+
+**Dashboard Home** - [app/dashboard/page.tsx](file:///c:/Users/jtlab/.gemini/antigravity/scratch/bulletin-flow/app/dashboard/page.tsx)
+- Welcome message with church name
+- Quick stats (bulletins count)
+- Recent bulletins list
+- "New Bulletin" button for quick access
+
+**Sidebar Navigation** - [components/navigation/sidebar.tsx](file:///c:/Users/jtlab/.gemini/antigravity/scratch/bulletin-flow/components/navigation/sidebar.tsx)
+- Dashboard, Bulletins, Templates links
+- Active state highlighting
+- Responsive design (hidden on mobile)
+
+**Header** - [components/navigation/header.tsx](file:///c:/Users/jtlab/.gemini/antigravity/scratch/bulletin-flow/components/navigation/header.tsx)
+- User email display
+- Dropdown menu with logout
+- Clean, minimal design
+
+### 3. PDF Upload
+
+**Upload Page** - [app/dashboard/bulletins/new/page.tsx](file:///c:/Users/jtlab/.gemini/antigravity/scratch/bulletin-flow/app/dashboard/bulletins/new/page.tsx)
+- Clean upload interface
+
+**Upload Zone Component** - [components/bulletin/upload-zone.tsx](file:///c:/Users/jtlab/.gemini/antigravity/scratch/bulletin-flow/components/bulletin/upload-zone.tsx)
+- Drag-and-drop file upload with react-dropzone
+- Click to browse files
+- File validation:
+  - PDF files only
+  - Maximum 10MB size
+- Upload progress indicator
+- Week date picker
+- Error handling with user-friendly messages
+
+**Upload Utilities** - [lib/pdf/upload.ts](file:///c:/Users/jtlab/.gemini/antigravity/scratch/bulletin-flow/lib/pdf/upload.ts)
+```typescript
+// Upload PDF to Supabase Storage
+uploadPdfToStorage(churchId, file) => Promise<url>
+
+// Create bulletin database record
+createBulletinRecord(churchId, pdfUrl, weekOf) => Promise<id>
+
+// Get authenticated user's church
+getUserChurch() => Promise<church>
+```
+
+**Upload API Route** - [app/api/bulletins/upload/route.ts](file:///c:/Users/jtlab/.gemini/antigravity/scratch/bulletin-flow/app/api/bulletins/upload/route.ts)
+- POST endpoint for file uploads
+- Integrates Storage upload + database insert
+- Returns bulletin ID for next step
+
+---
+
+## 📦 Dependencies Installed
+
+```json
+{
+  "dependencies": {
+    "pdfjs-dist": "PDF rendering and text extraction",
+    "react-dropzone": "Drag-and-drop file upload",
+    "uuid": "Unique filename generation"
+  },
+  "devDependencies": {
+    "@types/uuid": "TypeScript types for uuid",
+    "@radix-ui/react-icons": "Icons for UI components"
+  }
+}
+```
+
+---
+
+## 🚧 What's Remaining (Phase 1)
+
+### High Priority
+
+1. **PDF Text Extraction**
+   - Implement PDF.js text extraction with coordinates
+   - Extract bounding box information for each text element
+   - Handle multi-page PDFs
+
+2. **Template Definition Interface**
+   - PDF canvas viewer with PDF.js
+   - Click-to-select text functionality
+   - Field naming dialog
+   - Field type selection (text/multiline)
+   - Template save to database
+
+3. **Template Auto-Matching**
+   - Layout fingerprinting algorithm
+   - Template similarity matching
+   - Auto-select template for uploaded PDFs
+
+4. **Form Editor**
+   - Dynamic form generation from template
+   - Field value extraction from PDF
+   - Edit and save field values
+
+5. **PDF Generation Pipeline**
+   - PDF → DOCX conversion (Python service)
+   - Field injection into DOCX
+   - DOCX → PDF conversion
+   - Download delivery
+
+### Testing
+- Unit tests for upload functions
+- Integration tests for auth flow
+- E2E test for complete workflow
+
+---
+
+## 🧪 Testing Instructions
+
+### 1. Test Authentication
+
+**Signup:**
+```
+1. Navigate to http://localhost:3000/signup
+2. Enter:
+   - Church Name: "Test Church"
+   - Email: "test@example.com"
+   - Password: "test123"
+   - Confirm Password: "test123"
+3. Click "Sign up"
+4. Should redirect to dashboard
+```
+
+**Login:**
+```
+1. Navigate to http://localhost:3000/login
+2. Enter credentials from signup
+3. Click "Sign in"
+4. Should redirect to dashboard
+```
+
+**Logout:**
+```
+1. In dashboard, click user email in header
+2. Click "Log out"
+3. Should redirect to login page
+```
+
+### 2. Test Dashboard
+
+**View Dashboard:**
+```
+1. After logging in, observe:
+   - Church name displayed
+   - Navigation sidebar (Dashboard, Bulletins, Templates)
+   - Stats cards showing bulletin count
+   - "New Bulletin" button
+```
+
+### 3. Test PDF Upload
+
+**Upload a PDF:**
+```
+1. Click "New Bulletin" button
+2. Drag a PDF file or click to browse
+3. Select a PDF (max 10MB)
+4. Choose a week date
+5. Click "Upload and Continue"
+6. Should upload to Supabase Storage
+7. Should create bulletin record in database
+```
+
+**Test File Validation:**
+```
+- Try uploading a non-PDF file → Should show error
+- Try uploading a PDF > 10MB → Should show error
+```
+
+---
+
+## 🗄️ Database State
+
+After testing, you should see:
+
+**churches table:**
+```
+| id | name | owner_id | created_at |
+|----|------|----------|------------|
+| uuid | Test Church | user_uuid | timestamp |
+```
+
+**bulletins table:**
+```
+| id | church_id | original_pdf_url | week_of | created_at |
+|----|-----------|------------------|---------|------------|
+| uuid | church_uuid | storage_url | 2025-12-01| timestamp |
+```
+
+**Supabase Storage (bulletin-pdfs bucket):**
+```
+{church_id}/{uuid}.pdf
+```
+
+---
+
+## 🔧 Technical Notes
+
+### Storage Configuration
+- Bucket: `bulletin-pdfs` (private)
+- Path structure: `{churchId}/{uuid}.pdf`
+- Max file size: 10MB
+- Allowed types: PDF only
+
+### Authentication Flow
+1. Supabase Auth handles email/password
+2. On signup, user + church created simultaneously
+3. Middleware protects dashboard routes
+4. Session stored in cookies
+
+### Error Handling
+- Upload component shows user-friendly errors
+- API routes return proper HTTP status codes
+- Form validation before submission
+
+---
+
+## 📊 Progress Summary
+
+**Completed:**
+- ✅ Authentication (login/signup)
+- ✅ Church management (automatic creation)
+- ✅ Dashboard layout & navigation
+- ✅ PDF upload with Storage integration
+- ✅ File validation
+- ✅ Error handling
+
+**In Progress:**
+- 🔄 PDF text extraction (next up)
+- 🔄 Template definition interface
+- 🔄 Template matching
+- 🔄 Form editor
+- 🔄 PDF generation pipeline
+
+**Completion:** ~30% of Phase 1
+
+---
+
+## 🚀 Next Steps
+
+1. **Implement PDF Text Extraction**
+   - Use PDF.js to extract text with coordinates
+   - Create utility function for text extraction
+   - Write tests
+
+2. **Build Template Definition UI**
+   - Create PDF canvas viewer
+   - Add click-to-select functionality
+   - Implement field naming dialog
+
+3. **Continue with remaining Phase 1 features**
+
+---
+
+## 💾 Git Commits
+
+```bash
+# Commit 1: Authentication & Dashboard
+feat: Add authentication and dashboard (Phase 1 partial)
+- Login/signup pages
+- Dashboard layout with navigation
+- Sidebar and header components
+
+# Commit 2: PDF Upload
+feat: Add PDF upload functionality
+- Upload utilities for Supabase Storage
+- Drag-and-drop component
+- File validation
+- Upload API route
+```
+
+Repository: https://github.com/jtlabs777/bulletin-flow.git
+
+---
+
+## ✨ What's Working
+
+You can now:
+1. ✅ Sign up and create a church
+2. ✅ Log in with email/password
+3. ✅ View dashboard
+4. ✅ Upload PDF bulletins
+5. ✅ See bulletins in dashboard
+
+The foundation is solid! Ready to continue building the template definition and PDF processing features.

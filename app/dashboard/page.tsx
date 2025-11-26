@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { FileText, Plus } from 'lucide-react'
+import { redirect } from 'next/navigation'
 
 export default async function DashboardPage() {
     const supabase = await createClient()
@@ -14,19 +15,25 @@ export default async function DashboardPage() {
     if (!user) return null
 
     // Get user's church
-    const { data: churches } = await supabase
+    const { data: churches, error: churchError } = await supabase
         .from('churches')
         .select('*')
         .eq('owner_id', user.id)
-        .single()
+        .maybeSingle()
+
+    // If no church found, redirect to create church page
+    if (!churches) {
+        redirect('/dashboard/create-church')
+    }
 
     // Get recent bulletins
     const { data: bulletins } = await supabase
         .from('bulletins')
         .select('*')
-        .eq('church_id', churches?.id)
+        .eq('church_id', churches.id)
         .order('created_at', { ascending: false })
         .limit(5)
+
 
     return (
         <div className="space-y-6">
