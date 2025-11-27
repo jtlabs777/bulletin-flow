@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { ArrowLeft, Edit, FileText, Download } from 'lucide-react'
 import PdfViewerWrapper from '@/components/bulletin/pdf-viewer-wrapper'
+import ExtractedFields from '@/components/bulletin/extracted-fields'
 
 interface PageProps {
     params: Promise<{ id: string }>
@@ -156,6 +157,17 @@ export default async function ViewBulletinPage({ params }: PageProps) {
                     )}
                 </CardContent>
             </Card>
+
+            {/* Extracted Field Values */}
+            <ExtractedFields
+                bulletinId={id}
+                hasTemplateFields={
+                    !!bulletin.template_fields ||
+                    (bulletin.is_template && !!bulletin.template_fields)
+                }
+                currentFieldValues={bulletin.field_values as Record<string, string> | undefined}
+                templateFields={bulletin.template_fields as any}
+            />
 
             {/* PDF Preview */}
             <Card>
