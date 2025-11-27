@@ -46,21 +46,62 @@ export default function DefineTemplateClient({
     const [fields, setFields] = useState<FieldDefinition[]>(existingFields)
     const [templateName, setTemplateName] = useState(initialName)
     const [showFieldDialog, setShowFieldDialog] = useState(false)
-    const [currentPosition, setCurrentPosition] = useState<{ x: number, y: number, page: number } | null>(null)
     const [newFieldLabel, setNewFieldLabel] = useState('')
     const [newFieldType, setNewFieldType] = useState<'text' | 'date' | 'number'>('text')
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState('')
 
-    const handlePdfClick = (x: number, y: number, page: number) => {
-        setCurrentPosition({ x, y, page })
+    // Drag-to-select state
+    const [isDragging, setIsDragging] = useState(false)
+    const [dragStart, setDragStart] = useState<{ x: number; y: number; page: number } | null>(null)
+    const [dragCurrent, setDragCurrent] = useState<{ x: number; y: number } | null>(null)
+    const [selectedArea, setSelectedArea] = useState<{ x: number; y: number; width: number; height: number; page: number } | null>(null)
+
+    const handleMouseDown = (x: number, y: number, page: number) => {
+        setIsDragging(true)
+        setDragStart({ x, y, page })
+        setDragCurrent({ x, y })
+    }
+
+    const handleMouseMove = (x: number, y: number, page: number) => {
+        if (isDragging && dragStart && dragStart.page === page) {
+            setDragCurrent({ x, y })
+        }
+    }
+
+    const handleMouseUp = (x: number, y: number, page: number) => {
+        if (!isDragging || !dragStart || dragStart.page !== page) {
+            setIsDragging(false)
+            setDragStart(null)
+            setDragCurrent(null)
+            return
+        }
+
+        // Calculate the selected area
+        const startX = Math.min(dragStart.x, x)
+        const startY = Math.min(dragStart.y, y)
+        const width = Math.abs(x - dragStart.x)
+        const height = Math.abs(y - dragStart.y)
+
+        // Require minimum size (10x10) to avoid accidental clicks
+        if (width < 10 || height < 10) {
+            setIsDragging(false)
+            setDragStart(null)
+            setDragCurrent(null)
+            return
+        }
+
+        setSelectedArea({ x: startX, y: startY, width, height, page })
         setNewFieldLabel('')
         setNewFieldType('text')
         setShowFieldDialog(true)
+        setIsDragging(false)
+        setDragStart(null)
+        setDragCurrent(null)
     }
 
     const handleAddField = () => {
-        if (!currentPosition || !newFieldLabel.trim()) {
+        if (!selectedArea || !newFieldLabel.trim()) {
             setError('Field label is required')
             return
         }
@@ -68,16 +109,17 @@ export default function DefineTemplateClient({
         const newField: FieldDefinition = {
             id: uuidv4(),
             label: newFieldLabel.trim(),
-            x: currentPosition.x,
-            y: currentPosition.y,
-            width: 100, // Default width
-            height: 20, // Default height
-            page: currentPosition.page,
+            x: selectedArea.x,
+            y: selectedArea.y,
+            width: selectedArea.width,
+            height: selectedArea.height,
+            page: selectedArea.page,
             type: newFieldType
         }
 
         setFields([...fields, newField])
         setShowFieldDialog(false)
+        setSelectedArea(null)
         setError('')
     }
 
@@ -142,7 +184,7 @@ export default function DefineTemplateClient({
                     <div>
                         <h1 className="text-3xl font-bold">Define Template</h1>
                         <p className="text-gray-600 mt-1">
-                            Click on the PDF to define field positions
+                            Drag on the PDF to select field areas
                         </p>
                     </div>
                 </div>
@@ -188,7 +230,7 @@ export default function DefineTemplateClient({
                 <CardContent>
                     {fields.length === 0 ? (
                         <p className="text-gray-500 text-sm">
-                            No fields defined yet. Click on the PDF below to add fields.
+                            No fields defined yet. Drag on the PDF below to select field areas.
                         </p>
                     ) : (
                         <div className="space-y-2">
@@ -222,13 +264,19 @@ export default function DefineTemplateClient({
                 <CardHeader>
                     <CardTitle>PDF Template</CardTitle>
                     <CardDescription>
-                        Click to add field markers
+                        Drag to select field areas
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="relative">
-                        <PdfViewer pdfUrl={pdfUrl} onPageClick={handlePdfClick} />
-                        {/* This is where field markers would be overlaid */}
+                        <PdfViewer
+                            pdfUrl={pdfUrl}
+                            onMouseDown={handleMouseDown}
+                            onMouseMove={handleMouseMove}
+                            onMouseUp={handleMouseUp}
+                            dragStart={dragStart}
+                            dragCurrent={dragCurrent}
+                        />
                     </div>
                 </CardContent>
             </Card>
@@ -239,7 +287,9 @@ export default function DefineTemplateClient({
                     <DialogHeader>
                         <DialogTitle>Define Field</DialogTitle>
                         <DialogDescription>
-                            Add a field at position ({currentPosition?.x.toFixed(0)}, {currentPosition?.y.toFixed(0)})
+                            {selectedArea && (
+                                <>Selected area: {Math.round(selectedArea.width)} × {Math.round(selectedArea.height)}px</>
+                            )}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
