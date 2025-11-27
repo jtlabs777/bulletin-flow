@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { ArrowLeft, Edit, FileText, Download } from 'lucide-react'
-import PdfViewer from '@/components/bulletin/pdf-viewer'
+import PdfViewerWrapper from '@/components/bulletin/pdf-viewer-wrapper'
 
 interface PageProps {
     params: Promise<{ id: string }>
@@ -163,7 +163,7 @@ export default async function ViewBulletinPage({ params }: PageProps) {
                     <CardTitle>PDF Preview</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <PdfViewer pdfUrl={bulletin.original_pdf_url} />
+                    <PdfViewerWrapper pdfUrl={bulletin.original_pdf_url} />
                 </CardContent>
             </Card>
         </div>

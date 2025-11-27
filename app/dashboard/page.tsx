@@ -118,7 +118,7 @@ export default async function DashboardPage() {
                                             Created {new Date(bulletin.created_at).toLocaleDateString()}
                                         </p>
                                     </div>
-                                    <Link href={`/dashboard/bulletins/${bulletin.id}/edit`}>
+                                    <Link href={`/dashboard/bulletins/${bulletin.id}`}>
                                         <Button variant="outline" size="sm">
                                             View
                                         </Button>

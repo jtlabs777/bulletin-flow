@@ -1,12 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import * as pdfjsLib from 'pdfjs-dist'
 import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
-// Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`
+//@ts-ignore
+// Configure PDF.js worker - use local worker file
+if (typeof window !== 'undefined') {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf-worker/pdf.worker.mjs'
+}
 
 interface PdfViewerProps {
     pdfUrl: string
@@ -24,9 +27,23 @@ export default function PdfViewer({
     const [scale, setScale] = useState<number>(1.0)
     const [loading, setLoading] = useState<boolean>(true)
     const [error, setError] = useState<string>('')
+    // Key to force canvas recreation (fixes React Strict Mode double-render)
+    const [canvasKey, setCanvasKey] = useState<number>(0)
+
+    const canvasRef = useRef<HTMLCanvasElement>(null)
 
     useEffect(() => {
-        loadPdf()
+        // Force canvas recreation to avoid PDF.js canvas conflicts
+        setCanvasKey(prev => prev + 1)
+
+        // Small delay to ensure canvas is ready
+        const timer = setTimeout(() => {
+            loadPdf()
+        }, 50)
+
+        return () => {
+            clearTimeout(timer)
+        }
     }, [pdfUrl, pageNumber, scale])
 
     const loadPdf = async () => {
@@ -35,8 +52,7 @@ export default function PdfViewer({
             setError('')
 
             // Load PDF
-            const loadingTask = pdfjsLib.getDocument(pdfUrl)
-            const pdf = await loadingTask.promise
+            const pdf = await pdfjsLib.getDocument(pdfUrl).promise
 
             setNumPages(pdf.numPages)
 
@@ -44,11 +60,15 @@ export default function PdfViewer({
             const page = await pdf.getPage(pageNumber)
 
             // Prepare canvas
-            const canvas = document.getElementById('pdf-canvas') as HTMLCanvasElement
-            if (!canvas) return
+            const canvas = canvasRef.current
+            if (!canvas) {
+                return
+            }
 
             const context = canvas.getContext('2d')
-            if (!context) return
+            if (!context) {
+                return
+            }
 
             // Set viewport
             const viewport = page.getViewport({ scale })
@@ -56,14 +76,13 @@ export default function PdfViewer({
             canvas.width = viewport.width
 
             // Render PDF page
-            const renderContext = {
+            await page.render({
                 canvasContext: context,
                 viewport: viewport,
-            }
+            } as any).promise
 
-            await page.render(renderContext).promise
             setLoading(false)
-        } catch (err) {
+        } catch (err: any) {
             console.error('Error loading PDF:', err)
             setError('Failed to load PDF')
             setLoading(false)
@@ -163,7 +182,8 @@ export default function PdfViewer({
                     </div>
                 )}
                 <canvas
-                    id="pdf-canvas"
+                    key={canvasKey}
+                    ref={canvasRef}
                     onClick={handleCanvasClick}
                     className={onPageClick ? 'cursor-crosshair' : 'cursor-default'}
                 />
