@@ -77,8 +77,8 @@ export default function ExtractedFields({
                     textContent,
                     field.x,
                     field.y,
-                    field.width || 150,
-                    field.height || 30
+                    field.width || 80,  // Reduced from 150
+                    field.height || 15  // Reduced from 30
                 )
                 extracted[field.id] = value
             }
