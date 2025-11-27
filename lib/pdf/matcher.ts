@@ -132,36 +132,28 @@ export async function createTemplate(
     bulletinId: string,
     name: string,
     fieldDefinitions: FieldDefinition[],
-    fingerprint: string,
+    fingerprint: any,
     churchId: string
 ): Promise<string> {
     const supabase = await createClient()
 
-    // Create template record
-    const { data: template, error: templateError } = await supabase
-        .from('templates')
-        .insert({
-            church_id: churchId,
-            name,
-            layout_fingerprint: fingerprint,
-            field_definitions: fieldDefinitions
-        })
-        .select('id')
-        .single()
-
-    if (templateError) throw templateError
-
-    // Mark bulletin as template and link to template
+    // Update bulletin to be a template with all template data
     const { error: bulletinError } = await supabase
         .from('bulletins')
         .update({
             is_template: true,
-            template_id: template.id,
-            layout_fingerprint: fingerprint
+            template_name: name,
+            template_fields: fieldDefinitions,
+            template_layout_fingerprint: fingerprint,
+            layout_fingerprint: typeof fingerprint === 'string' ? fingerprint : JSON.stringify(fingerprint)
         })
         .eq('id', bulletinId)
+        .eq('church_id', churchId)
 
-    if (bulletinError) throw bulletinError
+    if (bulletinError) {
+        console.error('Error updating bulletin template:', bulletinError)
+        throw bulletinError
+    }
 
-    return template.id
+    return bulletinId
 }
