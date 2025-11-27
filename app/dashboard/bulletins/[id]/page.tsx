@@ -167,6 +167,7 @@ export default async function ViewBulletinPage({ params }: PageProps) {
                 }
                 currentFieldValues={bulletin.field_values as Record<string, string> | undefined}
                 templateFields={bulletin.template_fields as any}
+                pdfUrl={bulletin.original_pdf_url}
             />
 
             {/* PDF Preview */}

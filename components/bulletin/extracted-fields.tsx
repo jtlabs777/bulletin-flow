@@ -5,6 +5,12 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Sparkles, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import * as pdfjsLib from 'pdfjs-dist'
+
+// Configure PDF.js worker
+if (typeof window !== 'undefined') {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf-worker/pdf.worker.mjs'
+}
 
 interface FieldDefinition {
     id: string
@@ -13,6 +19,8 @@ interface FieldDefinition {
     x: number
     y: number
     page: number
+    width?: number
+    height?: number
 }
 
 interface ExtractedFieldsProps {
@@ -20,6 +28,7 @@ interface ExtractedFieldsProps {
     hasTemplateFields: boolean
     currentFieldValues?: Record<string, string>
     templateFields?: FieldDefinition[]
+    pdfUrl: string
 }
 
 export default function ExtractedFields({
@@ -27,29 +36,106 @@ export default function ExtractedFields({
     hasTemplateFields,
     currentFieldValues,
     templateFields,
+    pdfUrl,
 }: ExtractedFieldsProps) {
     const [extracting, setExtracting] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [extractedValues, setExtractedValues] = useState<Record<string, string> | null>(
+        currentFieldValues || null
+    )
     const router = useRouter()
 
-    const hasExtractedValues =
-        currentFieldValues && Object.keys(currentFieldValues).length > 0
+    const hasExtractedValues = extractedValues && Object.keys(extractedValues).length > 0
+
+    const extractFieldValues = async (): Promise<Record<string, string>> => {
+        if (!templateFields || templateFields.length === 0) {
+            throw new Error('No template fields defined')
+        }
+
+        // Load PDF document
+        const pdf = await pdfjsLib.getDocument(pdfUrl).promise
+        const extracted: Record<string, string> = {}
+
+        // Group fields by page
+        const fieldsByPage: Record<number, FieldDefinition[]> = {}
+        for (const field of templateFields) {
+            const page = field.page || 1
+            if (!fieldsByPage[page]) {
+                fieldsByPage[page] = []
+            }
+            fieldsByPage[page].push(field)
+        }
+
+        // Process each page
+        for (const [pageNum, pageFields] of Object.entries(fieldsByPage)) {
+            const page = await pdf.getPage(parseInt(pageNum))
+            const textContent = await page.getTextContent()
+
+            // Extract text for each field on this page
+            for (const field of pageFields) {
+                const value = extractTextAtPosition(
+                    textContent,
+                    field.x,
+                    field.y,
+                    field.width || 150,
+                    field.height || 30
+                )
+                extracted[field.id] = value
+            }
+        }
+
+        return extracted
+    }
+
+    const extractTextAtPosition = (
+        textContent: any,
+        x: number,
+        y: number,
+        width: number,
+        height: number
+    ): string => {
+        const items = textContent.items as any[]
+        const matchingItems: string[] = []
+
+        for (const item of items) {
+            const [, , , , itemX, itemY] = item.transform
+            const itemWidth = item.width || 0
+            const itemHeight = item.height || 10
+
+            // Check if text item overlaps with field bounds
+            const overlapsX = itemX < x + width && itemX + itemWidth > x
+            const overlapsY = itemY < y + height && itemY + itemHeight > y - height
+
+            if (overlapsX && overlapsY) {
+                matchingItems.push(item.str)
+            }
+        }
+
+        return matchingItems.join(' ').trim()
+    }
 
     const handleExtract = async () => {
         setExtracting(true)
         setError(null)
 
         try {
-            const response = await fetch(`/api/bulletins/${bulletinId}/extract`, {
+            // Extract values client-side
+            const values = await extractFieldValues()
+            setExtractedValues(values)
+
+            // Save to database via API
+            const response = await fetch(`/api/bulletins/${bulletinId}/save-values`, {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fieldValues: values }),
             })
 
             if (!response.ok) {
                 const data = await response.json()
-                throw new Error(data.error || 'Failed to extract values')
+                throw new Error(data.error || 'Failed to save values')
             }
 
-            // Refresh the page to show extracted values
+            // Refresh to show saved values
             router.refresh()
         } catch (err) {
             console.error('Extraction error:', err)
@@ -100,7 +186,7 @@ export default function ExtractedFields({
 
                 {hasExtractedValues && (
                     <div className="space-y-3">
-                        {Object.entries(currentFieldValues!).map(([fieldId, value]) => (
+                        {Object.entries(extractedValues!).map(([fieldId, value]) => (
                             <div
                                 key={fieldId}
                                 className="flex justify-between items-start p-3 bg-gray-50 rounded-lg"
