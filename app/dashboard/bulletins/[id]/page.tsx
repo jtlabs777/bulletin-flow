@@ -148,7 +148,7 @@ export default async function ViewBulletinPage({ params }: PageProps) {
                         </Link>
                     )}
                     {bulletin.is_template && (
-                        <Link href={`/dashboard/bulletins/${id}/edit-template`}>
+                        <Link href={`/dashboard/bulletins/${id}/define-template`}>
                             <Button variant="outline">
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit Template Fields
