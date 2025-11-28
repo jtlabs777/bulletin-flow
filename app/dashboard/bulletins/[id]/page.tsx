@@ -186,7 +186,7 @@ export default async function ViewBulletinPage({ params }: PageProps) {
                             pdfUrl={bulletin.original_pdf_url}
                             templateFields={bulletin.template_fields as any}
                             fieldValues={bulletin.field_values as Record<string, string>}
-                            bulletinTitle={bulletin.title}
+                            bulletinTitle={bulletin.week_of || `bulletin_${id}`}
                         />
                     </CardContent>
                 </Card>
