@@ -57,6 +57,9 @@ export default function DefineTemplateClient({
     const [dragCurrent, setDragCurrent] = useState<{ x: number; y: number } | null>(null)
     const [selectedArea, setSelectedArea] = useState<{ x: number; y: number; width: number; height: number; page: number } | null>(null)
 
+    // Edit field state
+    const [editingFieldId, setEditingFieldId] = useState<string | null>(null)
+
     const handleMouseDown = (x: number, y: number, page: number) => {
         setIsDragging(true)
         setDragStart({ x, y, page })
@@ -92,9 +95,30 @@ export default function DefineTemplateClient({
         }
 
         setSelectedArea({ x: startX, y: startY, width, height, page })
-        setNewFieldLabel('')
-        setNewFieldType('text')
-        setShowFieldDialog(true)
+
+        // If editing an existing field, update it directly
+        if (editingFieldId) {
+            const fieldIndex = fields.findIndex(f => f.id === editingFieldId)
+            if (fieldIndex !== -1) {
+                const updatedFields = [...fields]
+                updatedFields[fieldIndex] = {
+                    ...updatedFields[fieldIndex],
+                    x: startX,
+                    y: startY,
+                    width,
+                    height,
+                    page
+                }
+                setFields(updatedFields)
+                setEditingFieldId(null)
+            }
+        } else {
+            // Adding new field
+            setNewFieldLabel('')
+            setNewFieldType('text')
+            setShowFieldDialog(true)
+        }
+
         setIsDragging(false)
         setDragStart(null)
         setDragCurrent(null)
@@ -121,6 +145,15 @@ export default function DefineTemplateClient({
         setShowFieldDialog(false)
         setSelectedArea(null)
         setError('')
+    }
+
+    const handleEditField = (fieldId: string) => {
+        setEditingFieldId(fieldId)
+        // User will now drag to select new area for this field
+    }
+
+    const handleCancelEdit = () => {
+        setEditingFieldId(null)
     }
 
     const handleDeleteField = (fieldId: string) => {
@@ -224,7 +257,9 @@ export default function DefineTemplateClient({
                 <CardHeader>
                     <CardTitle>Defined Fields ({fields.length})</CardTitle>
                     <CardDescription>
-                        Fields you've marked on the PDF
+                        {editingFieldId
+                            ? '🎯 Editing mode: Drag on the PDF below to reposition the selected field'
+                            : 'Fields you\'ve marked on the PDF'}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -237,21 +272,47 @@ export default function DefineTemplateClient({
                             {fields.map((field) => (
                                 <div
                                     key={field.id}
-                                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                                    className={`flex items-center justify-between p-3 rounded-lg ${editingFieldId === field.id
+                                            ? 'bg-blue-100 border-2 border-blue-500'
+                                            : 'bg-gray-50'
+                                        }`}
                                 >
                                     <div>
                                         <p className="font-medium">{field.label}</p>
                                         <p className="text-sm text-gray-600">
-                                            Page {field.page} • Type: {field.type} • Position: ({Math.round(field.x)}, {Math.round(field.y)})
+                                            Page {field.page} • Type: {field.type} • Size: {Math.round(field.width || 0)}×{Math.round(field.height || 0)}px
                                         </p>
                                     </div>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => handleDeleteField(field.id)}
-                                    >
-                                        <Trash2 className="h-4 w-4 text-red-600" />
-                                    </Button>
+                                    <div className="flex gap-2">
+                                        {editingFieldId === field.id ? (
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={handleCancelEdit}
+                                            >
+                                                Cancel
+                                            </Button>
+                                        ) : (
+                                            <>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => handleEditField(field.id)}
+                                                    title="Reposition field"
+                                                >
+                                                    <Edit className="h-4 w-4 text-blue-600" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => handleDeleteField(field.id)}
+                                                    title="Delete field"
+                                                >
+                                                    <Trash2 className="h-4 w-4 text-red-600" />
+                                                </Button>
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
                             ))}
                         </div>
