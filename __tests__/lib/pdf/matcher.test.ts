@@ -50,5 +50,24 @@ describe('Template Matcher', () => {
 
             expect(sim1).toBe(sim2)
         })
+
+        it('should recognize high similarity for similar templates', () => {
+            const fp1 = 'SABBATH|SCHOOL|DIVINE|SERVICE|ANNOUNCEMENTS|BENEDICTION'
+            const fp2 = 'SABBATH|SCHOOL|DIVINE|SERVICE|ANNOUNCEMENTS|CLOSING'
+
+            const similarity = calculateSimilarity(fp1, fp2)
+
+            // 5 out of 6 words match
+            expect(similarity).toBeGreaterThan(0.7)
+        })
+
+        it('should return low similarity for different templates', () => {
+            const sundayBulletin = 'SABBATH|SCHOOL|DIVINE|SERVICE'
+            const weekdayBulletin = 'PRAYER|MEETING|BIBLE|STUDY'
+
+            const similarity = calculateSimilarity(sundayBulletin, weekdayBulletin)
+
+            expect(similarity).toBeLessThan(0.3)
+        })
     })
 })
