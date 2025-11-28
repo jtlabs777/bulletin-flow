@@ -34,6 +34,22 @@ export default async function DashboardPage() {
         .order('created_at', { ascending: false })
         .limit(5)
 
+    // Get count of bulletins with templates
+    const { count: templatesCount } = await supabase
+        .from('bulletins')
+        .select('*', { count: 'exact', head: true })
+        .eq('church_id', churches.id)
+        .not('template_fields', 'is', null)
+
+    // Get count of bulletins created this month
+    const now = new Date()
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    const { count: thisMonthCount } = await supabase
+        .from('bulletins')
+        .select('*', { count: 'exact', head: true })
+        .eq('church_id', churches.id)
+        .gte('created_at', firstDayOfMonth.toISOString())
+
 
     return (
         <div className="space-y-6">
@@ -66,7 +82,7 @@ export default async function DashboardPage() {
                         <CardTitle>Templates</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-3xl font-bold">0</p>
+                        <p className="text-3xl font-bold">{templatesCount || 0}</p>
                     </CardContent>
                 </Card>
                 <Card>
@@ -74,7 +90,7 @@ export default async function DashboardPage() {
                         <CardTitle>This Month</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-3xl font-bold">0</p>
+                        <p className="text-3xl font-bold">{thisMonthCount || 0}</p>
                     </CardContent>
                 </Card>
             </div>
