@@ -34,13 +34,15 @@ interface DefineTemplateClientProps {
     pdfUrl: string
     existingFields?: FieldDefinition[]
     templateName?: string
+    fieldValues?: Record<string, string>
 }
 
 export default function DefineTemplateClient({
     bulletinId,
     pdfUrl,
     existingFields = [],
-    templateName: initialName = ''
+    templateName: initialName = '',
+    fieldValues = {}
 }: DefineTemplateClientProps) {
     const router = useRouter()
     const [fields, setFields] = useState<FieldDefinition[]>(existingFields)
@@ -279,8 +281,11 @@ export default function DefineTemplateClient({
                                 >
                                     <div>
                                         <p className="font-medium">{field.label}</p>
-                                        <p className="text-sm text-gray-600">
-                                            Page {field.page} • Type: {field.type} • Size: {Math.round(field.width || 0)}×{Math.round(field.height || 0)}px
+                                        <p
+                                            className="text-sm text-gray-600"
+                                            title={`Page ${field.page} • Type: ${field.type} • Position: (${Math.round(field.x)}, ${Math.round(field.y)}) • Size: ${Math.round(field.width || 0)}×${Math.round(field.height || 0)}px`}
+                                        >
+                                            {fieldValues[field.id] || <span className="text-gray-400 italic">(no value extracted)</span>}
                                         </p>
                                     </div>
                                     <div className="flex gap-2">

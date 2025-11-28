@@ -48,6 +48,7 @@ export default async function DefineTemplatePage({ params }: PageProps) {
             pdfUrl={bulletin.original_pdf_url}
             existingFields={bulletin.template_fields || []}
             templateName={bulletin.template_name || ''}
+            fieldValues={bulletin.field_values || {}}
         />
     )
 }
