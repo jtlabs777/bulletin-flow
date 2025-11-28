@@ -109,11 +109,18 @@ export default function ExtractedFields({
             const itemWidth = item.width || 0
             const itemHeight = item.height || 10
 
-            // Check if text item overlaps with field bounds
-            const overlapsX = itemX < x + width && itemX + itemWidth > x
-            const overlapsY = itemY < y + height && itemY + itemHeight > y
+            // Calculate the center point of the text item
+            const itemCenterX = itemX + itemWidth / 2
+            const itemCenterY = itemY + itemHeight / 2
 
-            if (overlapsX && overlapsY) {
+            // Check if the CENTER of the text item falls within the field boundaries
+            const centerInBounds =
+                itemCenterX >= x &&
+                itemCenterX <= x + width &&
+                itemCenterY >= y &&
+                itemCenterY <= y + height
+
+            if (centerInBounds) {
                 matchingItems.push(item.str)
             }
         }
