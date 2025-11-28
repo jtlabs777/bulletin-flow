@@ -200,19 +200,22 @@ export default function ExtractedFields({
 
                 {hasExtractedValues && (
                     <div className="space-y-3">
-                        {Object.entries(extractedValues!).map(([fieldId, value]) => (
-                            <div
-                                key={fieldId}
-                                className="flex justify-between items-start p-3 bg-gray-50 rounded-lg"
-                            >
-                                <div className="space-y-1">
-                                    <p className="text-sm font-medium text-gray-700">
-                                        {getFieldLabel(fieldId)}
-                                    </p>
-                                    <p className="text-base">{value || '(empty)'}</p>
+                        {templateFields?.map((field) => {
+                            const value = extractedValues![field.id]
+                            return (
+                                <div
+                                    key={field.id}
+                                    className="flex justify-between items-start p-3 bg-gray-50 rounded-lg"
+                                >
+                                    <div className="space-y-1">
+                                        <p className="text-sm font-medium text-gray-700">
+                                            {field.label}
+                                        </p>
+                                        <p className="text-base">{value || <span className="text-gray-400 italic">(no value extracted)</span>}</p>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            )
+                        })}
                         <Button
                             onClick={handleExtract}
                             variant="outline"
