@@ -69,16 +69,22 @@ export default function ExtractedFields({
         // Process each page
         for (const [pageNum, pageFields] of Object.entries(fieldsByPage)) {
             const page = await pdf.getPage(parseInt(pageNum))
+            const viewport = page.getViewport({ scale: 1.0 })
+            const pageHeight = viewport.height
             const textContent = await page.getTextContent()
 
             // Extract text for each field on this page
             for (const field of pageFields) {
+                // Convert Y coordinate from canvas (top-left) to PDF (bottom-left)
+                const pdfY = pageHeight - field.y - (field.height || 15)
+
                 const value = extractTextAtPosition(
                     textContent,
                     field.x,
-                    field.y,
-                    field.width || 80,  // Reduced from 150
-                    field.height || 15  // Reduced from 30
+                    pdfY,
+                    field.width || 80,
+                    field.height || 15,
+                    pageHeight
                 )
                 extracted[field.id] = value
             }
@@ -92,7 +98,8 @@ export default function ExtractedFields({
         x: number,
         y: number,
         width: number,
-        height: number
+        height: number,
+        pageHeight?: number
     ): string => {
         const items = textContent.items as any[]
         const matchingItems: string[] = []
@@ -104,7 +111,7 @@ export default function ExtractedFields({
 
             // Check if text item overlaps with field bounds
             const overlapsX = itemX < x + width && itemX + itemWidth > x
-            const overlapsY = itemY < y + height && itemY + itemHeight > y - height
+            const overlapsY = itemY < y + height && itemY + itemHeight > y
 
             if (overlapsX && overlapsY) {
                 matchingItems.push(item.str)
