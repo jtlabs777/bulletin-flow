@@ -25,7 +25,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import PdfViewer from '@/components/bulletin/pdf-viewer'
 import FieldMarker from '@/components/bulletin/field-marker'
-import { ArrowLeft, Save, Trash2 } from 'lucide-react'
+import { ArrowLeft, Save, Trash2, Edit } from 'lucide-react'
 import Link from 'next/link'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -273,8 +273,8 @@ export default function DefineTemplateClient({
                                 <div
                                     key={field.id}
                                     className={`flex items-center justify-between p-3 rounded-lg ${editingFieldId === field.id
-                                            ? 'bg-blue-100 border-2 border-blue-500'
-                                            : 'bg-gray-50'
+                                        ? 'bg-blue-100 border-2 border-blue-500'
+                                        : 'bg-gray-50'
                                         }`}
                                 >
                                     <div>
