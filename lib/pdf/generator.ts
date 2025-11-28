@@ -38,12 +38,13 @@ export async function generateCustomPDF(options: GeneratePDFOptions): Promise<Ui
             const page = pdfDoc.getPage(field.page - 1)
             const { height: pageHeight } = page.getSize()
 
-            // Convert coordinates from canvas (top-left origin) to PDF (bottom-left origin)
-            const pdfX = field.x
-            const pdfY = pageHeight - field.y - (field.height || 15)
-
             // Calculate font size based on field height (if available)
             const calculatedFontSize = field.height ? Math.min(field.height * 0.8, fontSize) : fontSize
+
+            // Convert coordinates from canvas (top-left origin) to PDF (bottom-left origin)
+            // PDF draws text from baseline, so we subtract the font size instead of field height
+            const pdfX = field.x
+            const pdfY = pageHeight - field.y - calculatedFontSize
 
             // Draw the text
             page.drawText(value, {
