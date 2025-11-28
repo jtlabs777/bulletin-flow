@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { ArrowLeft, Edit, FileText, Download } from 'lucide-react'
 import PdfViewerWrapper from '@/components/bulletin/pdf-viewer-wrapper'
 import ExtractedFields from '@/components/bulletin/extracted-fields'
+import GeneratePDFButton from '@/components/bulletin/generate-pdf-button'
 
 interface PageProps {
     params: Promise<{ id: string }>
@@ -169,6 +170,27 @@ export default async function ViewBulletinPage({ params }: PageProps) {
                 templateFields={bulletin.template_fields as any}
                 pdfUrl={bulletin.original_pdf_url}
             />
+
+            {/* Generate PDF */}
+            {bulletin.template_fields && bulletin.field_values && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Generate Custom PDF</CardTitle>
+                        <CardDescription>
+                            Download a bulletin with your customized field values
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <GeneratePDFButton
+                            bulletinId={id}
+                            pdfUrl={bulletin.original_pdf_url}
+                            templateFields={bulletin.template_fields as any}
+                            fieldValues={bulletin.field_values as Record<string, string>}
+                            bulletinTitle={bulletin.title}
+                        />
+                    </CardContent>
+                </Card>
+            )}
 
             {/* PDF Preview */}
             <Card>
