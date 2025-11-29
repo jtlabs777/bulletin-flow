@@ -1,0 +1,371 @@
+# End-to-End Testing Guide - BulletinFlow
+
+## Overview
+
+This guide will walk you through testing the complete BulletinFlow workflow from uploading a bulletin to generating a customized PDF.
+
+---
+
+## Prerequisites
+
+### 1. Start the Development Server
+```bash
+npm run dev
+```
+**Expected:** Server running at `http://localhost:3000`
+
+### 2. Ensure You're Logged In
+- Navigate to `http://localhost:3000`
+- Sign in with your account
+- **Expected:** Redirected to dashboard
+
+---
+
+## Test Workflow
+
+### Step 1: Upload a Bulletin
+
+**Navigate to:** Dashboard → "+ New Bulletin" button
+
+**Actions:**
+1. Click **"New Bulletin"**
+2. Drag and drop a PDF bulletin file (or click to browse)
+3. Enter week date (e.g., `2025-11-28`)
+4. Click **"Upload Bulletin"**
+
+**Expected Results:**
+- ✅ Upload progress indicator appears
+- ✅ File uploads to Supabase storage
+- ✅ Redirected to bulletin details page
+- ✅ PDF preview displays correctly
+
+**Troubleshooting:**
+- ❌ **Upload fails:** Check Supabase storage RLS policies
+- ❌ **PDF doesn't display:** Check browser console for CORS errors
+
+---
+
+### Step 2: Define Template Fields
+
+**Navigate to:** Bulletin Details → "Edit Template Fields" button
+
+**Actions:**
+1. Click **"Edit Template Fields"**
+2. **Drag** on the PDF to select first field area (e.g., Speaker Name)
+   - Drag from top-left to bottom-right of the text
+   - Selection rectangle should appear
+3. In the dialog:
+   - **Label:** `Speaker`
+   - **Type:** [Text](file:///c:/Users/jtlab/.gemini/antigravity/scratch/bulletin-flow/lib/pdf/analyzer.ts#18-26)
+   - Click **"Add Field"**
+4. **Repeat** for other fields:
+   - `Benediction` (speaker name at benediction)
+   - `Deacon on Duty #1` (first deacon name)
+   - `Deacon on Duty #2` (second deacon name)
+   - `Sunset` (sunset time)
+5. Click **"Save Template"**
+
+**Expected Results:**
+- ✅ Selection rectangle appears when dragging
+- ✅ Dialog shows selected area dimensions
+- ✅ Field appears in "Defined Fields" list
+- ✅ Each field shows position info on hover
+- ✅ Success message after saving
+
+**Tips:**
+- 📏 Keep selection tight around the text
+- 🎯 Center-point detection means only text whose center is inside the box will be captured
+- ✏️ You can edit field positions by clicking the edit icon
+
+**Example Screenshot Location:**
+![Template Definition](file:///C:/Users/jtlab/.gemini/antigravity/brain/1b1e7ce2-25c2-4dd3-8c15-334d19853762/uploaded_image_0_1764339192949.png)
+
+---
+
+### Step 3: Extract Field Values
+
+**Navigate to:** Bulletin Details page (after defining template)
+
+**Actions:**
+1. Scroll to **"Field Values"** section
+2. Click **"Extract Field Values"** button
+3. Wait for extraction to complete
+
+**Expected Results:**
+- ✅ Button shows loading spinner
+- ✅ Extracted values appear for each field:
+   ```
+   Speaker
+   Eld. Harold Sykes
+   
+   Benediction
+   Eld. Harold Sykes
+   
+   Deacon on Duty #1
+   Curtis Moss
+   
+   Deacon on Duty #2
+   Marquis Wills
+   
+   Sunset
+   5:30
+   ```
+- ✅ Values match the actual text in the PDF
+- ✅ Empty fields show "(no value extracted)"
+
+**Troubleshooting:**
+- ❌ **Wrong text extracted:** Field box may be too large/small
+  - Edit the field and adjust the selection area
+  - Re-extract values
+- ❌ **No value extracted:** Text might not be in the selected area
+  - Check that selection box is over the text
+  - Remember: center-point detection only
+
+**What to Check:**
+- [ ] All fields show extracted values
+- [ ] Values match the PDF exactly
+- [ ] No extra text included (e.g., "End-Times" shouldn't be in "Eld. Harold Sykes")
+
+---
+
+### Step 4: Generate Custom PDF
+
+**Navigate to:** Bulletin Details → "Generate Custom PDF" section
+
+**Actions:**
+1. Scroll to **"Generate Custom PDF"** section
+2. Click **"Generate PDF"** button
+3. Wait for generation (1-2 seconds)
+4. PDF downloads automatically
+
+**Expected Results:**
+- ✅ Button shows loading state
+- ✅ PDF downloads with filename like: `2025_11_28_2025-11-28.pdf`
+- ✅ Success (button returns to normal state)
+
+**Open the Downloaded PDF:**
+1. Open the downloaded PDF
+2. **Verify:**
+   - [ ] All field values appear on the PDF
+   - [ ] Text positioning overlays the original text locations
+   - [ ] Text is readable and properly sized
+   - [ ] No obvious misalignment
+
+**Example Comparison:**
+
+**Original PDF:**
+![Original](file:///C:/Users/jtlab/.gemini/antigravity/brain/1b1e7ce2-25c2-4dd3-8c15-334d19853762/uploaded_image_0_1764341298226.png)
+
+**Generated PDF** (should look similar with overlaid text)
+
+**Troubleshooting:**
+- ❌ **Text misaligned:** Positioning algorithm may need adjustment
+  - Expected to be "close" but not pixel-perfect
+  - Text should be in the general area
+- ❌ **Download fails:** Check browser console for errors
+- ❌ **Button disabled:** Ensure fields are extracted first
+
+---
+
+## Complete Workflow Checklist
+
+Use this checklist for a full end-to-end test:
+
+### Upload & Setup
+- [ ] Upload a bulletin PDF successfully
+- [ ] PDF displays in preview
+- [ ] Bulletin appears in dashboard list
+
+### Template Definition
+- [ ] Click "Edit Template Fields"
+- [ ] Drag-select works smoothly
+- [ ] Selection rectangle shows accurate dimensions
+- [ ] Add 5+ fields with meaningful labels
+- [ ] Edit field positions works
+- [ ] Delete field works
+- [ ] Save template succeeds
+
+### Extraction
+- [ ] Click "Extract Field Values"
+- [ ] All fields show extracted values
+- [ ] Values are accurate (match PDF)
+- [ ] No extra text captured
+- [ ] Empty fields handled gracefully
+
+### PDF Generation
+- [ ] Click "Generate PDF"
+- [ ] PDF downloads automatically
+- [ ] Open downloaded PDF
+- [ ] All fields visible in PDF
+- [ ] Text positioning is acceptable
+- [ ] PDF is usable for church service
+
+### Dashboard Stats
+- [ ] Total Bulletins count correct
+- [ ] Templates count shows 1+ after defining template
+- [ ] This Month count shows bulletins from current month
+
+---
+
+## Testing Different Scenarios
+
+### Scenario 1: New Template
+Test with a bulletin that has never been seen before.
+
+**Expected:** All steps work smoothly
+
+### Scenario 2: Reuse Template
+1. Upload a second bulletin with same layout
+2. Template should auto-match (future feature, currently manual)
+3. Extract values
+4. Generate PDF
+
+**Expected:** Same template works for similar bulletins
+
+### Scenario 3: Different Layout
+Upload a completely different bulletin format.
+
+**Expected:** Need to define new template fields
+
+### Scenario 4: Missing Values
+Test a field where no text exists in that position.
+
+**Expected:** Shows "(no value extracted)" and PDF generation still works
+
+---
+
+## Performance Benchmarks
+
+### Expected Timings:
+- **PDF Upload:** 2-5 seconds
+- **Template Save:** < 1 second
+- **Field Extraction:** 1-3 seconds
+- **PDF Generation:** 1-2 seconds
+
+### If Slower:
+- Check network connection
+- Check PDF file size (>10MB may be slow)
+- Check browser console for errors
+
+---
+
+## Common Issues & Solutions
+
+### Issue: PDF Won't Load
+**Symptoms:** Blank or error in PDF viewer
+
+**Solutions:**
+1. Check Supabase storage policies
+2. Verify PDF uploaded correctly
+3. Check browser console for CORS errors
+4. Try refreshing the page
+
+### Issue: Extraction Captures Wrong Text
+**Symptoms:** Field shows incorrect or extra text
+
+**Solutions:**
+1. Edit the field
+2. Make selection box smaller/tighter
+3. Remember center-point detection
+4. Re-extract values
+
+### Issue: Generated PDF Text Misaligned
+**Symptoms:** Text appears in wrong position
+
+**Solutions:**
+1. This is expected to some degree
+2. Text should be in the "ballpark"
+3. Check if original PDF has unusual formatting
+4. Future: Fine-tuning offset adjustments
+
+### Issue: Button Disabled
+**Symptoms:** "Generate PDF" button is grayed out
+
+**Solutions:**
+1. Ensure template is defined
+2. Ensure field values are extracted
+3. Check that both exist in database
+
+---
+
+## Success Criteria
+
+Your end-to-end test is successful if:
+
+✅ **Upload:** PDF uploads and displays  
+✅ **Template:** Can define 5+ fields via drag-select  
+✅ **Extract:** All fields show correct values  
+✅ **Generate:** PDF downloads with overlaid text  
+✅ **Quality:** Generated PDF is usable for service  
+
+---
+
+## Next Steps After Testing
+
+### If Everything Works:
+1. Test with multiple different bulletins
+2. Validate with real church bulletins
+3. Consider Phase 2 enhancements
+
+### If Issues Found:
+1. Document specific issues
+2. Note which step failed
+3. Include screenshots if possible
+4. Check error messages in console
+
+### Recommended Improvements (Phase 2):
+- Edit field values before PDF generation
+- Preview PDF before download
+- Better positioning controls
+- Multiple template management
+
+---
+
+## Testing Checklist Summary
+
+**Before You Start:**
+- [ ] Dev server running (`npm run dev`)
+- [ ] Logged into application
+- [ ] Have sample bulletin PDFs ready
+
+**Critical Tests:**
+- [ ] Upload bulletin
+- [ ] Define template with 5+ fields
+- [ ] Extract values
+- [ ] Generate PDF
+- [ ] Verify PDF quality
+
+**Edge Cases:**
+- [ ] Empty fields
+- [ ] Very long text
+- [ ] Special characters
+- [ ] Different page sizes
+
+---
+
+## Support
+
+**If you encounter issues:**
+1. Check browser console (F12)
+2. Review error messages
+3. Verify database schema
+4. Check Supabase logs
+5. Review this walkthrough for missed steps
+
+**Common Console Commands:**
+```bash
+# View logs
+npm run dev
+
+# Run tests
+npm test
+
+# Check database
+# Visit Supabase dashboard
+```
+
+---
+
+**Happy Testing! 🎉**
+
+Your feedback from this testing will inform Phase 2 priorities and improvements.

@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Download, Loader2 } from 'lucide-react'
+import { Eye, Loader2 } from 'lucide-react'
 import { generateCustomPDF, downloadPDF } from '@/lib/pdf/generator'
 import { FieldDefinition } from '@/lib/pdf/matcher'
+import PDFPreviewModal from './pdf-preview-modal'
 
 interface GeneratePDFButtonProps {
     bulletinId: string
@@ -23,6 +24,7 @@ export default function GeneratePDFButton({
 }: GeneratePDFButtonProps) {
     const [generating, setGenerating] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [previewPdfBytes, setPreviewPdfBytes] = useState<Uint8Array | null>(null)
 
     const handleGenerate = async () => {
         setGenerating(true)
@@ -36,11 +38,8 @@ export default function GeneratePDFButton({
                 fieldValues: fieldValues
             })
 
-            // Create filename from bulletin title
-            const filename = `${bulletinTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${new Date().toISOString().split('T')[0]}.pdf`
-
-            // Download the PDF
-            downloadPDF(pdfBytes, filename)
+            // Show preview instead of auto-download
+            setPreviewPdfBytes(pdfBytes)
         } catch (err) {
             console.error('PDF generation error:', err)
             setError(err instanceof Error ? err.message : 'Failed to generate PDF')
@@ -49,47 +48,70 @@ export default function GeneratePDFButton({
         }
     }
 
+    const handleDownload = () => {
+        if (previewPdfBytes) {
+            // Create filename from bulletin title
+            const filename = `${bulletinTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${new Date().toISOString().split('T')[0]}.pdf`
+
+            // Download the PDF
+            downloadPDF(previewPdfBytes, filename)
+        }
+    }
+
+    const handleClosePreview = () => {
+        setPreviewPdfBytes(null)
+    }
+
     const hasValues = Object.keys(fieldValues).length > 0
     const hasFields = templateFields && templateFields.length > 0
 
     return (
-        <div className="space-y-2">
-            <Button
-                onClick={handleGenerate}
-                disabled={generating || !hasValues || !hasFields}
-                size="lg"
-                className="w-full sm:w-auto"
-            >
-                {generating ? (
-                    <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Generating PDF...
-                    </>
-                ) : (
-                    <>
-                        <Download className="mr-2 h-4 w-4" />
-                        Generate PDF
-                    </>
+        <>
+            <div className="space-y-2">
+                <Button
+                    onClick={handleGenerate}
+                    disabled={generating || !hasValues || !hasFields}
+                    size="lg"
+                    className="w-full sm:w-auto"
+                >
+                    {generating ? (
+                        <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Generating PDF...
+                        </>
+                    ) : (
+                        <>
+                            <Eye className="mr-2 h-4 w-4" />
+                            Preview PDF
+                        </>
+                    )}
+                </Button>
+
+                {!hasFields && (
+                    <p className="text-sm text-gray-500">
+                        Template fields must be defined to generate PDF
+                    </p>
                 )}
-            </Button>
 
-            {!hasFields && (
-                <p className="text-sm text-gray-500">
-                    Template fields must be defined to generate PDF
-                </p>
-            )}
+                {hasFields && !hasValues && (
+                    <p className="text-sm text-gray-500">
+                        Extract field values before generating PDF
+                    </p>
+                )}
 
-            {hasFields && !hasValues && (
-                <p className="text-sm text-gray-500">
-                    Extract field values before generating PDF
-                </p>
-            )}
+                {error && (
+                    <p className="text-sm text-red-600">
+                        {error}
+                    </p>
+                )}
+            </div>
 
-            {error && (
-                <p className="text-sm text-red-600">
-                    {error}
-                </p>
-            )}
-        </div>
+            <PDFPreviewModal
+                pdfBytes={previewPdfBytes}
+                filename={bulletinTitle}
+                onClose={handleClosePreview}
+                onDownload={handleDownload}
+            />
+        </>
     )
 }
